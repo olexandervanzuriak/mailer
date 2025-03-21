@@ -1,10 +1,18 @@
 from fasthtml.common import *
 from dataclasses import dataclass
 import secrets
+import os
+import dotenv
+import schedule
+import threading
+import time
+import secrets
 from subscribe import send_verification_email
+from mailer import send_email
 
 app, rt = fast_app()
 db = database('data/example.db')
+dotenv.load_dotenv("config.env")
 
 @dataclass
 class TempUser:
@@ -12,6 +20,11 @@ class TempUser:
     email: str
     email_time: str
     token: str
+
+class User:
+    username: str
+    email: str
+    email_time: str
 
 def validate_user(user: TempUser):
     errors = []
@@ -22,6 +35,44 @@ def validate_user(user: TempUser):
     if not user.email_time:
         errors.append("Email time must be selected")
     return errors
+
+def send_daily_email(username, email):
+    """Send daily emails using mailer.py"""
+    print(f"Sending daily email to {username}")
+    send_email(email)
+
+def schedule_daily_email(username, email, email_time):
+    """Schedule the email sending at the user's chosen time."""
+    
+    job_identifier = (username, email, email_time)
+    
+    existing_jobs = [job for job in schedule.get_jobs() 
+                     if job.job_func.args == (username, email)]
+    
+    if existing_jobs:
+        print(f"Email for {email} at {email_time} is already scheduled.")
+    else:
+        schedule.every().day.at(email_time).do(send_daily_email, username, email)
+        print(f"Scheduled daily email for {username} at {email_time}")
+
+def load_existing_schedules():
+    """ Load all verified users and schedule their emails on startup """
+    users = db.q("SELECT username, email, email_time FROM users")
+    for user in users:
+        if not any(job.job_func.args == (user["username"], user["email"]) for job in schedule.get_jobs()):
+            schedule_daily_email(user["username"], user["email"], user["email_time"])
+        else:
+            print(f"User {user['username']} already has a scheduled email.")
+    print("Restored email schedules for existing users.")
+
+def run_scheduler():
+    """ Function to run the scheduler in the background """
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
+        for job in schedule.get_jobs():
+            print(f"Scheduled job for {job.job_func.args}")
+        print("\n")
 
 @rt("/")
 def get():
@@ -46,7 +97,7 @@ def post(username: str, email: str, email_time: str):
         return Div(Ul(*[Li(error) for error in errors]), id="result", style="color: red;")
 
     sender_email = "daybreakdigests@gmail.com" 
-    sender_password = "" 
+    sender_password = os.getenv("GMAIL_PASS")
 
     email_sent = send_verification_email(sender_email, sender_password, user.email, token)
 
@@ -76,4 +127,13 @@ def verify(token: str):
     else:
         return Div("Invalid or expired token.", style="color: red;")
 
-serve(host="192.168.0.105", port=5001)
+def on_server_start():
+    load_existing_schedules()
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+
+if __name__ == "__main__":
+    on_server_start()
+    print("start")
+
+    serve(host="192.168.0.108", port=5001)

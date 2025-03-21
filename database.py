@@ -12,7 +12,7 @@ users = db.t.users
 temp_users = db.t.temp_users
 print(db.q("SELECT * FROM temp_users"))
 user_token = "SdOq4AngHwX9x7eb7X1I6Q"
-db.q("DELETE FROM temp_users WHERE token=?", (user_token,))
+print(db.q("DELETE FROM users"))
 
 # user1 = db.q("SELECT * FROM temp_users WHERE token=?", (user_token,))
 # result = db.q("SELECT * FROM temp_users WHERE email=?", (email1,))[0]
@@ -26,6 +26,7 @@ if users not in db.t:
     users.create(id=int, username=str, email=str, email_time=str, pk='id')
 
 #result = db.t.temp_users.execute("SELECT * FROM temp_users WHERE email=?", "dan@doe.com")
-#users.insert(User(username="John Doe", email="john@doe.com", email_time="2020:04:12 12:30:00"))
+users.insert(username="John", email="sashavanzuriak@gmail.com", email_time="17:56")
+users.insert(username="John olexnader", email="sashavanzuriak@gmail.com", email_time="17:58")
 #users.insert(User(username="Jane Doe", email="jane@doe.com", email_time="2020:04:12 12:30:00"))
 #temp_users.insert(User(username="Dan L", email="dan@doe.com", email_time="2020:04:12 12:30:00"))

@@ -3,7 +3,7 @@ import secrets
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-BASE_URL = "http://192.168.0.105:5001/"
+BASE_URL = "http://192.168.0.108:5001/"
 
 def send_verification_email(sender_email, sender_password, recipient_email, token):
     try:
