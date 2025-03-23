@@ -15,6 +15,9 @@ app, rt = fast_app(hdrs=(css,), pico=False)
 db = database('data/example.db')
 dotenv.load_dotenv("config.env")
 
+scheduler_thread = None
+
+
 @dataclass
 class TempUser:
     username: str
@@ -22,10 +25,12 @@ class TempUser:
     email_time: str
     token: str
 
+
 class User:
     username: str
     email: str
     email_time: str
+
 
 def validate_user(user: TempUser):
     errors = []
@@ -37,34 +42,37 @@ def validate_user(user: TempUser):
         errors.append("Email time must be selected")
     return errors
 
+
 def send_daily_email(username, email):
     """Send daily emails using mailer.py"""
     print(f"Sending daily email to {username}")
     send_email(email)
 
+
+def clear_previous_task(username, email):
+    """Clear any previous scheduled tasks for the user."""
+    jobs_to_remove = [job for job in schedule.get_jobs() if job.job_func.args == (username, email)]
+    for job in jobs_to_remove:
+        print(f"Removing previous job for {username} at {email}")
+        schedule.cancel_job(job)
+
+
 def schedule_daily_email(username, email, email_time):
     """Schedule the email sending at the user's chosen time."""
     
-    job_identifier = (username, email, email_time)
-    
-    # Log the time being scheduled for clarity
+    clear_previous_task(username, email)
+
     print(f"Scheduling email for {username} at {email_time}")
 
-    # Ensure that the email_time is in the correct format HH:MM (24-hour format)
     try:
-        time.strptime(email_time, "%H:%M")  # This will raise an error if the format is wrong
+        time.strptime(email_time, "%H:%M")
     except ValueError:
         print(f"Invalid time format: {email_time}. It should be in HH:MM format.")
         return
-    
-    existing_jobs = [job for job in schedule.get_jobs() 
-                     if job.job_func.args == (username, email)]
-    
-    if existing_jobs:
-        print(f"Email for {email} at {email_time} is already scheduled.")
-    else:
-        schedule.every().day.at(email_time).do(send_daily_email, username, email)
-        print(f"Scheduled daily email for {username} at {email_time}")
+
+    schedule.every().day.at(email_time).do(send_daily_email, username, email)
+    print(f"Scheduled daily email for {username} at {email_time}")
+
 
 def load_existing_schedules():
     """ Load all verified users and schedule their emails on startup """
@@ -76,14 +84,42 @@ def load_existing_schedules():
             print(f"User {user['username']} already has a scheduled email.")
     print("Restored email schedules for existing users.")
 
+
+def stop_scheduler_thread():
+    """ Stop the currently running scheduler thread safely. """
+    global scheduler_thread
+    if scheduler_thread and scheduler_thread.is_alive():
+        print("Stopping the current scheduler thread.")
+        scheduler_thread.join() 
+        print("Scheduler thread stopped.")
+
+
+def clear_all_jobs():
+    """ Clears all scheduled jobs to ensure no duplicates. """
+    print("Clearing all scheduled jobs.")
+    schedule.clear()
+
+
+def restart_scheduler():
+    """Stop the previous scheduler thread, clear jobs, and start a new scheduler thread."""
+    stop_scheduler_thread()
+    clear_all_jobs()
+
+    global scheduler_thread
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    print("New scheduler thread started.")
+
+
 def run_scheduler():
-    """ Function to run the scheduler in the background """
+    """Function to run the scheduler in the background."""
     while True:
         schedule.run_pending()
         time.sleep(60)
         for job in schedule.get_jobs():
             print(f"Job for {job.job_func.args} scheduled at {job.next_run}")
         print("\n")
+
 
 @rt("/")
 def get():
@@ -114,6 +150,7 @@ def get():
             cls='wrapper'
         )
     )
+
 
 @rt("/register")
 def post(username: str, email: str, email_time: str):
@@ -153,6 +190,8 @@ def verify(token: str):
         db.t.users.insert(username=username, email=email, email_time=email_time)
         db.q("DELETE FROM temp_users WHERE token=?", (token,))
 
+
+        restart_scheduler()
         schedule_daily_email(username, email, email_time)
 
         return Div(
@@ -170,10 +209,15 @@ def verify(token: str):
             cls="container"
         )
 
+
 def on_server_start():
     load_existing_schedules()
-    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
-    scheduler_thread.start()
+    global scheduler_thread
+    if scheduler_thread is None or not scheduler_thread.is_alive():
+        scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+        scheduler_thread.start()
+    print("Scheduler started.")
+
 
 HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
 PORT = int(os.getenv("PORT", 5001))

@@ -1,0 +1,10 @@
+INFO:     Will watch for changes in these directories: ['/home/olexander/workspace/mailer/mailer']
+ERROR:    [Errno 98] Address already in use
+Scheduling email for Jane Doe at 18:30
+Scheduled daily email for Jane Doe at 18:30
+Scheduling email for olexander at 20:10
+Scheduled daily email for olexander at 20:10
+Restored email schedules for existing users.
+Scheduler started.
+start
+Link: http://192.168.31.127:5001
