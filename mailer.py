@@ -4,6 +4,7 @@ import base64
 import os
 import feedparser
 import dotenv
+from datetime import datetime
 
 dotenv.load_dotenv("conf.env")
 
@@ -12,18 +13,39 @@ SMTP_PORT = 465
 SENDER_EMAIL = 'daybreakdigests@gmail.com'
 SENDER_APP_PASSWORD = os.getenv("GMAIL_PASS")
 
+
+def format_date(date_string):
+    """Convert full datetime to 'DD Month, HH:MM' format"""
+    try:
+        parsed_date = datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z")
+        return parsed_date.strftime("%d %B, %H:%M")  # Example: '23 March, 20:49'
+    except ValueError:
+        return date_string  # If parsing fails, return the original string
+
+
 def fetch_news():
     """Fetch latest news from RSS feed"""
-    EMAIL_BODY = 'Today’s news:\n\n'
+    EMAIL_BODY = """
+    <html>
+    <body style="font-family: Arial, sans-serif;">
+    <h2 style="text-align: center;">📰 Today's News</h2>
+    """
     d = feedparser.parse('https://www.pravda.com.ua/rss/view_mainnews/')
-    for entry in d.entries[:3]:
+    for entry in d.entries[:5]:
+        formatted_date = format_date(entry.published)
         EMAIL_BODY += (
-            f"Title: {entry.title}\n"
-            f"Description: {entry.description}\n"
-            f"Published: {entry.published}\n"
-            f"Link: {entry.link}\n\n"
+            f"<h3 style='text-align: left;'><b>{entry.title}</b></h3>"
+            f"<p style='text-align: left;'>{entry.description}</p>"
+            f"<p style='text-align: left;'><strong>Published:</strong> {formatted_date}</p>"
+            f"<p style='text-align: left;'><a href='{entry.link}' style='text-decoration: none; color: #1a73e8;'>🔗 Read more</a></p>"
+            "<hr style='width: 50%; margin-left: 0; border: 1px solid #ddd;'>"
         )
+    EMAIL_BODY += """
+    </body>
+    </html>
+    """
     return EMAIL_BODY
+
 
 def send_email(recipient_email, subject="Today's News"):
     """Send an email using SMTP"""
@@ -55,6 +77,7 @@ def send_email(recipient_email, subject="Today's News"):
                 f"From: {SENDER_EMAIL}\r\n"
                 f"To: {recipient_email}\r\n"
                 f"Subject: {subject}\r\n"
+                "Content-Type: text/html; charset=UTF-8\r\n"
                 "\r\n"
                 f"{email_body}\r\n"
                 ".\r\n"
