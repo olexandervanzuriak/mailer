@@ -6,11 +6,12 @@ import dotenv
 import schedule
 import threading
 import time
-import secrets
 from subscribe import send_verification_email
 from mailer import send_email
 
-app, rt = fast_app()
+css = Link(rel="stylesheet", href="/static/styles.css")
+
+app, rt = fast_app(hdrs=(css,), pico=False)
 db = database('data/example.db')
 dotenv.load_dotenv("config.env")
 
@@ -76,16 +77,33 @@ def run_scheduler():
 
 @rt("/")
 def get():
-    return Titled("User Registration",
-                  Form(Input(type="text", name="username", placeholder="Username"),
-                       Input(type="email", name="email", placeholder="Email"),
-                       Input(type="time", name="email_time", placeholder="Select Time"),
-                       Button("Register", type="submit"),
-                       hx_post="/register",
-                       hx_target="#result"
-                       ),
-                       Div(id="result")
-                       )
+        return Titled(
+        Div(
+            H2('Registration'),
+            Form(
+                Div(
+                    Input(type='text', name="username", placeholder='Enter your username', required=''),
+                    cls='input-box'
+                ),
+                Div(
+                    Input(type='email', name="email", placeholder='Enter your email', required=''),
+                    cls='input-box'
+                ),
+                Div(
+                    Input(type="time", name="email_time", placeholder="Select Time", required=''),
+                    cls='input-box'
+                ),
+                Div(
+                    Input(type="submit"),
+                    cls='input-box button'
+                ),
+                hx_post="/register",
+                hx_target="#result"
+            ),
+            Div(id="result"),
+            cls='wrapper'
+        )
+    )
 
 @rt("/register")
 def post(username: str, email: str, email_time: str):
@@ -123,17 +141,31 @@ def verify(token: str):
         db.t.users.insert(username=user[0]["username"], email=user[0]["email"], email_time=user[0]["email_time"])
         db.q("DELETE FROM temp_users WHERE token=?", (token,))
 
-        return Div(f"Email verified! Welcome, {user[0]['username']}.", style="color: green;")
+        return Div(
+                H2("Verification Successful!", style="color: white;"),
+                P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: white;"),
+                P("You will start receiving daily emails at your chosen time.", style="color: white;"),
+                P("If you have any issues, feel free to contact support.", style="color: white;"),
+                cls="container"
+            ),
     else:
-        return Div("Invalid or expired token.", style="color: red;")
+        return Div(
+            H2("Verification Failed", style="color: white;"),
+            P("The verification link is invalid or has expired.", style="color: white;"),
+            P("Please try registering again.", style="color: white;"),
+            cls="container"
+        )
 
 def on_server_start():
     load_existing_schedules()
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
     scheduler_thread.start()
 
+HOST_IP = os.getenv("HOST_IP", "127.0.0.1")
+PORT = int(os.getenv("PORT", 5001))
+
 if __name__ == "__main__":
     on_server_start()
     print("start")
 
-    serve(host="192.168.0.108", port=5001)
+    serve(host=HOST_IP, port=PORT)

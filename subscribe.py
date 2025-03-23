@@ -1,9 +1,13 @@
 import smtplib
 import secrets
+import os
+import dotenv
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-BASE_URL = "http://192.168.0.108:5001/"
+dotenv.load_dotenv("config.env")
+
+BASE_URL = os.getenv("BASE_URL")
 
 def send_verification_email(sender_email, sender_password, recipient_email, token):
     try:
