@@ -47,6 +47,16 @@ def schedule_daily_email(username, email, email_time):
     
     job_identifier = (username, email, email_time)
     
+    # Log the time being scheduled for clarity
+    print(f"Scheduling email for {username} at {email_time}")
+
+    # Ensure that the email_time is in the correct format HH:MM (24-hour format)
+    try:
+        time.strptime(email_time, "%H:%M")  # This will raise an error if the format is wrong
+    except ValueError:
+        print(f"Invalid time format: {email_time}. It should be in HH:MM format.")
+        return
+    
     existing_jobs = [job for job in schedule.get_jobs() 
                      if job.job_func.args == (username, email)]
     
@@ -72,7 +82,7 @@ def run_scheduler():
         schedule.run_pending()
         time.sleep(60)
         for job in schedule.get_jobs():
-            print(f"Scheduled job for {job.job_func.args}")
+            print(f"Job for {job.job_func.args} scheduled at {job.next_run}")
         print("\n")
 
 @rt("/")
@@ -100,7 +110,7 @@ def get():
                 hx_post="/register",
                 hx_target="#result"
             ),
-            Div(id="result"),
+            Div(id="result", style="font-size: 16px;"),
             cls='wrapper'
         )
     )
@@ -114,16 +124,16 @@ def post(username: str, email: str, email_time: str):
     if errors:
         return Div(Ul(*[Li(error) for error in errors]), id="result", style="color: red;")
 
+    existing_user = db.q("SELECT * FROM temp_users WHERE email=?", (user.email,))
+    if existing_user:
+        return Div(f"Email {user.email} is already registered.", id="result", style="color: red;")
+
     sender_email = "daybreakdigests@gmail.com" 
     sender_password = os.getenv("GMAIL_PASS")
-
+        
     email_sent = send_verification_email(sender_email, sender_password, user.email, token)
 
     if email_sent:
-        existing_user = db.q("SELECT * FROM temp_users WHERE email=?", (user.email,))
-        if existing_user:
-            return Div(f"Email {user.email} is already registered.", id="result", style="color: red;")
-        
         db.t.temp_users.insert(user)
         return Div(f"Verification email sent to {user.email}. Please check your inbox.", id="result", style="color: blue;")
     else:
@@ -133,13 +143,17 @@ def post(username: str, email: str, email_time: str):
 @rt("/verify")
 def verify(token: str):
     user = db.q("SELECT * FROM temp_users WHERE token=?", (token,))
-    print(user)
-    print(token)
     all_tmp = db.q("SELECT * FROM temp_users")
-    print(all_tmp)
+
     if user:
-        db.t.users.insert(username=user[0]["username"], email=user[0]["email"], email_time=user[0]["email_time"])
+        username = user[0]["username"]
+        email = user[0]["email"]
+        email_time = user[0]["email_time"]
+
+        db.t.users.insert(username=username, email=email, email_time=email_time)
         db.q("DELETE FROM temp_users WHERE token=?", (token,))
+
+        schedule_daily_email(username, email, email_time)
 
         return Div(
                 H2("Verification Successful!", style="color: white;"),
