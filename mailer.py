@@ -1,3 +1,4 @@
+from fasthtml.common import *
 import socket
 import ssl
 import base64
@@ -6,6 +7,7 @@ import feedparser
 import dotenv
 from datetime import datetime
 
+db = database('data/example.db')
 dotenv.load_dotenv("conf.env")
 
 SMTP_SERVER = 'smtp.gmail.com'
@@ -14,42 +16,140 @@ SENDER_EMAIL = 'daybreakdigests@gmail.com'
 SENDER_APP_PASSWORD = os.getenv("GMAIL_PASS")
 
 
+from datetime import datetime
+
 def format_date(date_string):
-    """Convert full datetime to 'DD Month, HH:MM' format"""
+    """Convert full datetime to 'DD Month, HH:MM' format in Ukrainian"""
+    month_names = {
+        "January": "січня", "February": "лютого", "March": "березня", "April": "квітня",
+        "May": "травня", "June": "червня", "July": "липня", "August": "серпня",
+        "September": "вересня", "October": "жовтня", "November": "листопада", "December": "грудня"
+    }
+
     try:
-        parsed_date = datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z")
-        return parsed_date.strftime("%d %B, %H:%M")  # Example: '23 March, 20:49'
-    except ValueError:
-        return date_string  # If parsing fails, return the original string
+        # First, try to parse the date as an RFC 2822 date
+        try:
+            parsed_date = datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z")
+        except ValueError:
+            # If parsing as RFC 2822 fails, try parsing it as an ISO 8601 date
+            try:
+                parsed_date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+            except ValueError:
+                # If both parsing methods fail, return the original string
+                return date_string
+
+        # Convert the month from English to Ukrainian
+        month_english = parsed_date.strftime("%B")
+        month_ukrainian = month_names.get(month_english, month_english)
+        
+        # Return the formatted date
+        return parsed_date.strftime(f"%-d {month_ukrainian}, %H:%M")
+    
+    except Exception as e:
+        print(f"Error formatting date: {e}")
+        return date_string
 
 
-def fetch_news():
-    """Fetch latest news from RSS feed"""
+
+def fetch_news(news_channel):
+    """Fetch latest news from the specified news channel and type."""
+    # Modify this to handle different news channels
     EMAIL_BODY = """
     <html>
-    <body style="font-family: Arial, sans-serif;">
-    <h2 style="text-align: center;">📰 Today's News</h2>
+    <head>
+        <style>
+            body { 
+                font-family: 'Times New Roman', serif; 
+                background-color: #f2e6d9; /* Aged paper color */
+                padding: 20px;
+            }
+            .container {
+                max-width: 800px;
+                background: #fffaf0;
+                margin: auto;
+                padding: 30px;
+                box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                border: 1px solid #ccc;
+            }
+            h2 { 
+                text-align: center; 
+                font-size: 28px; 
+                color: #222;
+                font-family: 'Georgia', serif;
+                border-bottom: 3px solid #444;
+                padding-bottom: 10px;
+            }
+            h3 { 
+                text-align: left; 
+                font-size: 22px; 
+                color: #111;
+                font-weight: bold;
+            }
+            p { 
+                text-align: justify; 
+                font-size: 18px; 
+                color: #333;
+                line-height: 1.6;
+            }
+            .news-description { 
+                font-size: 18px; 
+                font-style: italic;
+                color: #222; 
+            }
+            .news-link { 
+                text-decoration: none; 
+                color: #b22222; 
+                font-weight: bold; 
+                font-size: 16px; 
+            }
+            hr { 
+                width: 100%; 
+                border: 1px dashed #777; 
+                margin: 20px 0; 
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h2>📰 Сьогоднішні новини</h2>
     """
-    d = feedparser.parse('https://www.pravda.com.ua/rss/view_mainnews/')
-    for entry in d.entries[:5]:
+    
+    # Add different news channel feeds
+    if news_channel == 'ukrpravda':
+        feed_url = 'https://www.ukrpravda.com/rss'
+    elif news_channel == 'epravda':
+        feed_url = "https://epravda.com.ua/rss/news/"
+    elif news_channel == 'radiosvoboda':
+        feed_url = 'https://www.radiosvoboda.org/api/zrqitl-vomx-tpeoumq'
+    elif news_channel == "tsn":
+        feed_url = "https://tsn.ua/rss/full.rss"
+
+    d = feedparser.parse(feed_url)
+    
+    # Filter news based on news type if applicable
+    for entry in d.entries[:5]:  
         formatted_date = format_date(entry.published)
-        EMAIL_BODY += (
-            f"<h3 style='text-align: left;'><b>{entry.title}</b></h3>"
-            f"<p style='text-align: left;'>{entry.description}</p>"
-            f"<p style='text-align: left;'><strong>Published:</strong> {formatted_date}</p>"
-            f"<p style='text-align: left;'><a href='{entry.link}' style='text-decoration: none; color: #1a73e8;'>🔗 Read more</a></p>"
-            "<hr style='width: 50%; margin-left: 0; border: 1px solid #ddd;'>"
+        EMAIL_BODY += (  
+            f"<h3>{entry.title}</h3>"  
+            f"<p class='news-description'>{entry.description}</p>"  
+            f"<p><strong>Дата публікації:</strong> {formatted_date}</p>"  
+            f"<p><a href='{entry.link}' class='news-link'>🔗 Докладніше</a></p>"  
+            "<hr>"  
         )
+
     EMAIL_BODY += """
+        </div>
     </body>
     </html>
     """
+    
     return EMAIL_BODY
-
 
 def send_email(recipient_email, subject="Today's News"):
     """Send an email using SMTP"""
-    email_body = fetch_news()
+    user = db.q("SELECT * FROM users WHERE email=?", (recipient_email,))
+    email_body = fetch_news(user[0]["news_channel"])
 
     context = ssl.create_default_context()
     with socket.create_connection((SMTP_SERVER, SMTP_PORT)) as sock:

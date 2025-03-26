@@ -9,7 +9,7 @@ import time
 from subscribe import send_verification_email
 from mailer import send_email
 
-css = Link(rel="stylesheet", href="/static/styles.css")
+css = Link(rel="stylesheet", href="/static/styles.css?v=1")
 
 app, rt = fast_app(hdrs=(css,), pico=False)
 db = database('data/example.db')
@@ -23,6 +23,7 @@ class TempUser:
     username: str
     email: str
     email_time: str
+    news_channel: str 
     token: str
 
 
@@ -30,6 +31,7 @@ class User:
     username: str
     email: str
     email_time: str
+    news_channel: str 
 
 
 def validate_user(user: TempUser):
@@ -123,6 +125,23 @@ def run_scheduler():
 
 @rt("/")
 def get():
+    return Titled(
+        Div(
+            H2("Hello, it's Day News!"),
+            P("Stay updated with our daily news. If you want to subscribe, click the link below to register and receive our daily updates via email."),
+            A("Click here to subscribe", href="/register", cls="subscribe-link"),
+            Div(
+                H3("Contact Us"),
+                P("For any queries, feel free to reach out to us at"),
+                A("daybreakdigests@gmail.com", href="mailto:daybreakdigests@gmail.com", cls="contact-link"),
+                cls="contact-us"
+            ),
+            cls="main-content"
+        )
+    )
+
+@rt("/register", methods="get")
+def get():
         return Titled(
         Div(
             H2('Registration'),
@@ -133,6 +152,16 @@ def get():
                 ),
                 Div(
                     Input(type='email', name="email", placeholder='Enter your email', required=''),
+                    cls='input-box'
+                ),
+                Div(
+                    Select(
+                        Option('Українська правда', value='ukrpravda'),
+                        Option('Радіо Свобода', value='radiosvoboda'),
+                        Option('Економічна правда', value='epravda'),
+                        Option('ТСН', value='tsn'),
+                        name='news_channel', required='',
+                    ),
                     cls='input-box'
                 ),
                 Div(
@@ -151,11 +180,10 @@ def get():
         )
     )
 
-
-@rt("/register")
-def post(username: str, email: str, email_time: str):
+@rt("/register", methods="post")
+def post(username: str, email: str, email_time: str, news_channel: str):
     token = secrets.token_urlsafe(16)
-    user = TempUser(username=username, email=email, email_time=email_time, token=token)
+    user = TempUser(username=username, email=email, email_time=email_time, news_channel=news_channel, token=token)
     print(user)
     errors = validate_user(user)
     if errors:
@@ -172,7 +200,7 @@ def post(username: str, email: str, email_time: str):
 
     if email_sent:
         db.t.temp_users.insert(user)
-        return Div(f"Verification email sent to {user.email}. Please check your inbox.", id="result", style="color: blue;")
+        return Div(f"Verification email sent to {user.email}. Please check your inbox.", id="result", style="color: black;")
     else:
         return Div("Could not send verification email. Please try again.", id="result", style="color: red;")
 
@@ -186,8 +214,9 @@ def verify(token: str):
         username = user[0]["username"]
         email = user[0]["email"]
         email_time = user[0]["email_time"]
+        news_channel = user[0]["news_channel"]
 
-        db.t.users.insert(username=username, email=email, email_time=email_time)
+        db.t.users.insert(username=username, email=email, email_time=email_time, news_channel=news_channel)
         db.q("DELETE FROM temp_users WHERE token=?", (token,))
 
 
@@ -195,17 +224,17 @@ def verify(token: str):
         schedule_daily_email(username, email, email_time)
 
         return Div(
-                H2("Verification Successful!", style="color: white;"),
-                P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: white;"),
-                P("You will start receiving daily emails at your chosen time.", style="color: white;"),
-                P("If you have any issues, feel free to contact support.", style="color: white;"),
+                H2("Verification Successful!", style="color: black;"),
+                P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: black;"),
+                P("You will start receiving daily emails at your chosen time.", style="color: black;"),
+                P("If you have any issues, feel free to contact support.", style="color: black;"),
                 cls="container"
             ),
     else:
         return Div(
-            H2("Verification Failed", style="color: white;"),
-            P("The verification link is invalid or has expired.", style="color: white;"),
-            P("Please try registering again.", style="color: white;"),
+            H2("Verification Failed", style="color: black;"),
+            P("The verification link is invalid or has expired.", style="color: black;"),
+            P("Please try registering again.", style="color: black;"),
             cls="container"
         )
 
