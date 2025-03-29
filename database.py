@@ -10,6 +10,8 @@ db = database('data/example.db')
 # make a table called "users"
 users = db.t.users
 temp_users = db.t.temp_users
+news_archive = db.t.news_archive
+news_archive.drop()
 #print(db.q("SELECT * FROM users"))
 #user_token = "SdOq4AngHwX9x7eb7X1I6Q"
 print(db.q("DELETE FROM users"))
@@ -25,8 +27,20 @@ if temp_users not in db.t:
 if users not in db.t:
     users.create(id=int, username=str, email=str, email_time=str, news_channel=str, pk='id')
 
+if news_archive not in db.t:
+    news_archive.create(
+        id=int,
+        date=str,
+        news_channel=str,
+        title=str,
+        description=str,
+        link=str,
+        time=str,
+        pk="id"
+    )
+
 #result = db.t.temp_users.execute("SELECT * FROM temp_users WHERE email=?", "dan@doe.com")
 #users.insert(username="John", email="sashavanzuriak@gmail.com", email_time="17:56")
 #users.insert(username="John olexnader", email="sashavanzuriak@gmail.com", email_time="17:58")
-users.insert(username="Jane Doe", email="sashavanzuriak@gmail.com", email_time="12:01", news_channel="epravda")
+users.insert(username="Jane Doe", email="sashavanzuriak@gmail.com", email_time="12:10", news_channel="epravda")
 #temp_users.insert(User(username="Dan L", email="dan@doe.com", email_time="2020:04:12 12:30:00"))

@@ -49,7 +49,33 @@ def format_date(date_string):
         print(f"Error formatting date: {e}")
         return date_string
 
+def fetch_news_to_database(news_channel, save_to_db=True):
+    """Fetch latest news from a specified channel and save to database if required."""
+    
+    feed_urls = {
+        'ukrpravda': 'https://www.pravda.com.ua/rss/view_news/',
+        'epravda': 'https://epravda.com.ua/rss/news/',
+        'radiosvoboda': 'https://www.radiosvoboda.org/api/zrqitl-vomx-tpeoumq',
+        'tsn': 'https://tsn.ua/rss/full.rss'
+    }
 
+    feed_url = feed_urls.get(news_channel)
+    if not feed_url:
+        return "Invalid news channel"
+
+    d = feedparser.parse(feed_url)
+    today_date = datetime.now().strftime("%Y-%m-%d")
+
+    for entry in d.entries[:5]:  
+        formatted_date = format_date(entry.published)
+        db.t.news_archive.insert(
+            date=today_date,
+            news_channel=news_channel,
+            title=entry.title,
+            description=entry.description,
+            link=entry.link,
+            time=formatted_date
+        )
 
 def fetch_news(news_channel):
     """Fetch latest news from the specified news channel and type."""
@@ -117,7 +143,7 @@ def fetch_news(news_channel):
     
     # Add different news channel feeds
     if news_channel == 'ukrpravda':
-        feed_url = 'https://www.ukrpravda.com/rss'
+        feed_url = 'https://www.pravda.com.ua/rss/view_news/'
     elif news_channel == 'epravda':
         feed_url = "https://epravda.com.ua/rss/news/"
     elif news_channel == 'radiosvoboda':

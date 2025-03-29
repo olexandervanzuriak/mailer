@@ -6,8 +6,10 @@ import dotenv
 import schedule
 import threading
 import time
+from datetime import datetime
 from subscribe import send_verification_email
 from mailer import send_email
+from mailer import fetch_news_to_database
 
 css = Link(rel="stylesheet", href="/static/styles.css?v=1")
 
@@ -49,6 +51,18 @@ def send_daily_email(username, email):
     """Send daily emails using mailer.py"""
     print(f"Sending daily email to {username}")
     send_email(email)
+
+def fetch_and_store_all_news():
+    """Fetch and store news from all sources once a day."""
+    news_channels = ["ukrpravda", "epravda", "radiosvoboda", "tsn"]
+    for channel in news_channels:
+        print(f"Fetching news for {channel}...")
+        fetch_news_to_database(channel)
+    print(f"News fetched and stored at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.")
+
+def schedule_daily_news_fetch():
+    """Schedule the daily news fetching task."""
+    schedule.every().day.at("11:10").do(fetch_and_store_all_news)
 
 
 def clear_previous_task(username, email):
@@ -130,6 +144,8 @@ def get():
             H2("Hello, it's Day News!"),
             P("Stay updated with our daily news. If you want to subscribe, click the link below to register and receive our daily updates via email."),
             A("Click here to subscribe", href="/register", cls="subscribe-link"),
+            P("Want to see past news?"),
+            A("Click here for past news", href="/news_history", cls="news-archive-link"),
             Div(
                 H3("Contact Us"),
                 P("For any queries, feel free to reach out to us at"),
@@ -238,10 +254,76 @@ def verify(token: str):
             cls="container"
         )
 
+@rt("/news_history", methods="get")
+def get_news_history():
+    return Titled(
+        Div(
+            H2("Select a Date and News Source to View Past News"),
+            Form(
+                Div(
+                    Input(type="date", name="news_date", required=""),
+                    cls="input-box"
+                ),
+                Div(
+                    Select(
+                        Option("Всі джерела", value="all"),
+                        Option("Українська правда", value="ukrpravda"),
+                        Option("Радіо Свобода", value="radiosvoboda"),
+                        Option("Економічна правда", value="epravda"),
+                        Option("ТСН", value="tsn"),
+                        name="news_channel",
+                        required=""
+                    ),
+                    cls="input-box"
+                ),
+                Div(
+                    Input(type="submit", value="Переглянути новини"),
+                    cls="input-box button"
+                ),
+                hx_post="/news_history",
+                hx_target="#news_results",
+                hx_swap="innerHTML"
+            ),
+            Div(id="news_results", style="font-size: 16px;"),
+            cls="wrapper"
+        )
+    )
+
+
+@rt("/news_history", methods="post")
+def post_news_history(news_date: str, news_channel: str):
+    """Retrieve past news based on selected date and source"""
+
+    query = "SELECT * FROM news_archive WHERE date=?"
+    params = [news_date]
+
+    if news_channel and news_channel != "all":
+        query += " AND news_channel=?"
+        params.append(news_channel)
+
+    news_records = db.q(query, params)
+
+    if not news_records:
+        return Div(f"Новини за {news_date} з {news_channel} не знайдено.", style="color: red;")
+
+    return Div(
+        H2(f"Новини за {news_date} ({news_channel if news_channel != 'all' else 'Всі джерела'})"),
+        *[
+            Div(
+                H3(record["title"]),
+                P(record["description"]),
+                P(A("Читати більше", href=record["link"], target="_blank")),
+                Hr()
+            ) for record in news_records
+        ]
+    )
+
+
 
 def on_server_start():
     load_existing_schedules()
     global scheduler_thread
+    schedule_daily_news_fetch()
     if scheduler_thread is None or not scheduler_thread.is_alive():
         scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
         scheduler_thread.start()
