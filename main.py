@@ -11,9 +11,10 @@ from subscribe import send_verification_email
 from mailer import send_email
 from mailer import fetch_news_to_database
 
-css = Link(rel="stylesheet", href="/static/styles.css?v=1")
+css = Link(rel="stylesheet", href="/static/styles.css")
+favicon = Link(rel="icon", href="/static/favicon.jpg", type="image/x-jpg")
 
-app, rt = fast_app(hdrs=(css,), pico=False)
+app, rt = fast_app(hdrs=(css, favicon), pico=False)
 db = database('data/example.db')
 dotenv.load_dotenv("config.env")
 
@@ -62,7 +63,7 @@ def fetch_and_store_all_news():
 
 def schedule_daily_news_fetch():
     """Schedule the daily news fetching task."""
-    schedule.every().day.at("11:10").do(fetch_and_store_all_news)
+    schedule.every().day.at("16:00").do(fetch_and_store_all_news)
 
 
 def clear_previous_task(username, email):
@@ -139,16 +140,18 @@ def run_scheduler():
 
 @rt("/")
 def get():
-    return Titled(
+    return Title("DayBreak Digests"), Main(
         Div(
-            H2("Hello, it's Day News!"),
-            P("Stay updated with our daily news. If you want to subscribe, click the link below to register and receive our daily updates via email."),
-            A("Click here to subscribe", href="/register", cls="subscribe-link"),
-            P("Want to see past news?"),
-            A("Click here for past news", href="/news_history", cls="news-archive-link"),
+            H2("Hello, it's DayBreak Digests!"),
+            P("Stay updated with our daily news. If you want to subscribe, click the link below to register and receive our daily updates via email or view previous news"),
+            Div(
+                A("Click here to subscribe", href="/register", cls="subscribe-link"),
+                A("Click here for past news", href="/news_history", cls="news-archive-link"),
+                cls="links-container"
+            ),
             Div(
                 H3("Contact Us"),
-                P("For any queries, feel free to reach out to us at"),
+                P("For any queries, feel free to reach out to us at", cls="contact-text"),
                 A("daybreakdigests@gmail.com", href="mailto:daybreakdigests@gmail.com", cls="contact-link"),
                 cls="contact-us"
             ),
@@ -158,7 +161,7 @@ def get():
 
 @rt("/register", methods="get")
 def get():
-        return Titled(
+        return Title("Registration"), Main(
         Div(
             H2('Registration'),
             Form(
@@ -239,26 +242,28 @@ def verify(token: str):
         restart_scheduler()
         schedule_daily_email(username, email, email_time)
 
-        return Div(
+        return Title("Verification"), Main(Div(
                 H2("Verification Successful!", style="color: black;"),
                 P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: black;"),
                 P("You will start receiving daily emails at your chosen time.", style="color: black;"),
                 P("If you have any issues, feel free to contact support.", style="color: black;"),
                 cls="container"
             ),
+        )
     else:
-        return Div(
+        return Title("Verification"), Main(Div(
             H2("Verification Failed", style="color: black;"),
             P("The verification link is invalid or has expired.", style="color: black;"),
             P("Please try registering again.", style="color: black;"),
             cls="container"
+            ),
         )
 
 @rt("/news_history", methods="get")
 def get_news_history():
-    return Titled(
+    return Title("News history"), Main(
         Div(
-            H2("Select a Date and News Source to View Past News"),
+            H2("Select a date and news source to view past news"),
             Form(
                 Div(
                     Input(type="date", name="news_date", required=""),
@@ -277,7 +282,7 @@ def get_news_history():
                     cls="input-box"
                 ),
                 Div(
-                    Input(type="submit", value="Переглянути новини"),
+                    Input(type="submit", value="See news"),
                     cls="input-box button"
                 ),
                 hx_post="/news_history",
@@ -285,7 +290,6 @@ def get_news_history():
                 hx_swap="innerHTML"
             ),
             Div(id="news_results", style="font-size: 16px;"),
-            cls="wrapper"
         )
     )
 
@@ -315,7 +319,7 @@ def post_news_history(news_date: str, news_channel: str):
                 P(A("Читати більше", href=record["link"], target="_blank")),
                 Hr()
             ) for record in news_records
-        ]
+        ], cls="masonry"
     )
 
 

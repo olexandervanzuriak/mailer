@@ -11,7 +11,7 @@ db = database('data/example.db')
 users = db.t.users
 temp_users = db.t.temp_users
 news_archive = db.t.news_archive
-news_archive.drop()
+
 #print(db.q("SELECT * FROM users"))
 #user_token = "SdOq4AngHwX9x7eb7X1I6Q"
 print(db.q("DELETE FROM users"))

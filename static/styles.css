@@ -130,7 +130,7 @@ form .text h3 a:hover {
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   padding: 40px;
   width: 100%;
-  max-width: 480px;
+  max-width: 600px;
   text-align: center;
   transition: transform 0.3s ease;
 }
@@ -165,7 +165,6 @@ form .text h3 a:hover {
   color: #ff9f00;
   font-weight: 600;
   text-decoration: none;
-  margin-top: 20px;
   display: inline-block;
   transition: color 0.3s ease;
 }
@@ -191,6 +190,47 @@ form .text h3 a:hover {
   color: #1a4c75;
 }
 
+.links-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.subscribe-link {
+  font-size: 18px;
+  color: #ff9f00;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.subscribe-link:hover {
+  color: #ff7a00;
+}
+
+.news-archive-link {
+  font-size: 18px;
+  color: #3bba3f;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.news-archive-link:hover {
+  color: #2d9a2d;
+}
+
+.contact-text {
+  margin-bottom: 0 !important;
+}
+
+.masonry {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: masonry;
+}
+
 /* Responsive Design: Ensures the page looks good on all devices */
 @media (max-width: 768px) {
   .main-content {
@@ -200,8 +240,166 @@ form .text h3 a:hover {
   .main-content h2 {
     font-size: 24px;
   }
+}
 
-  .subscribe-link {
-    font-size: 16px;
+a {
+  color: #3a362b;
+  text-decoration: none;
+}
+
+.paper {
+  position: relative;
+  width: 800px;
+  color: #3a362b;
+  border-radius: 2px;
+  border-top: 1px dashed rgba(0, 0, 0, 0.5);
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.5);
+  margin: 20px auto;
+  box-sizing: border-box;
+  padding-top: 10px;
+  padding-bottom: 5px;
+  background: rgba(204, 205, 191, 1);
+  background: -moz-linear-gradient(top, rgba(204, 205, 191, 1) 0%, rgba(226, 222, 210, 1) 20%, rgba(226, 222, 210, 1) 67%, rgba(204, 205, 191, 1) 100%);
+  background: -webkit-linear-gradient(top, rgba(204, 205, 191, 1) 0%, rgba(226, 222, 210, 1) 20%, rgba(226, 222, 210, 1) 67%, rgba(204, 205, 191, 1) 100%);
+  box-shadow: 0px 3px 20px 0px rgba(0, 0, 0, 0.75);
+}
+
+.titleDiv {
+  position: relative;
+  background-image: url("http://www.jarrodyellets.com/images/globe.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.title {
+  text-align: center;
+  font-size: 4em;
+  text-align: center;
+  font-family: "Gravitas One", cursive;
+  margin-bottom: 10px;
+  line-height: 2;
+  text-shadow: 4px 3px 0px #cccdbf, 9px 8px 0px rgba(0, 0, 0, 0.15);
+}
+
+.topHr {
+  border: 3px solid #3a362b;
+  margin-top: 0;
+  margin-bottom: 3px;
+}
+
+.bottomHr {
+  border: 1px solid #3a362b;
+  margin: 0;
+}
+
+.aboutTitle {
+  position: relative;
+  text-transform: uppercase;
+  font-family: "News Cycle", sans-serif;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.vol {
+  position: absolute;
+  left: 5%;
+}
+
+.date {
+  text-align: center;
+}
+
+.price {
+  position: absolute;
+  right: 5%;
+  top: 0;
+}
+
+.dateHr {
+  border: 2px solid #3a362b;
+  margin-top: 2px;
+  margin-bottom: 0;
+}
+
+.content {
+  position: relative;
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr;
+}
+
+.item {
+  padding: 5px;
+}
+
+.input-box {
+  padding: 10px;
+}
+
+.input-field {
+  width: 100%;
+  padding: 8px;
+  margin: 5px 0;
+  font-size: 14px;
+}
+
+.button input {
+  width: 100%;
+  padding: 10px;
+  background-color: #3a362b;
+  color: white;
+  border: none;
+  font-size: 16px;
+}
+
+.storyTitle {
+  font-family: "Oswald", sans-serif;
+  text-align: center;
+  font-size: 24px;
+  padding: 10px 0;
+}
+
+#news_results {
+  font-size: 16px;
+  padding: 20px;
+}
+
+#news_results .item {
+  margin-bottom: 20px;
+}
+
+#news_results .storyTitle {
+  font-size: 1.8em;
+}
+
+#news_results .description {
+  font-size: 14px;
+  padding: 5px 0;
+}
+
+#news_results a {
+  color: #3a362b;
+}
+
+@media (max-width: 850px) {
+  .paper {
+    width: 90vw;
+    margin: none;
+  }
+  .title {
+    line-height: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    font-size: 10px;
+  }
+  .aboutTitle {
+    font-size: 10px;
+  }
+  .content {
+    grid-template-rows: repeat(min-content, 1fr);
   }
 }
