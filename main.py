@@ -63,7 +63,7 @@ def fetch_and_store_all_news():
 
 def schedule_daily_news_fetch():
     """Schedule the daily news fetching task."""
-    schedule.every().day.at("16:00").do(fetch_and_store_all_news)
+    schedule.every().day.at("20:41").do(fetch_and_store_all_news)
 
 
 def clear_previous_task(username, email):
@@ -312,14 +312,15 @@ def post_news_history(news_date: str, news_channel: str):
 
     return Div(
         H2(f"Новини за {news_date} ({news_channel if news_channel != 'all' else 'Всі джерела'})"),
+        Div(
         *[
             Div(
                 H3(record["title"]),
                 P(record["description"]),
                 P(A("Читати більше", href=record["link"], target="_blank")),
-                Hr()
+                cls="news"
             ) for record in news_records
-        ], cls="masonry"
+        ], cls="news-div")
     )
 
 

@@ -382,6 +382,33 @@ a {
   color: #3a362b;
 }
 
+.news {
+  padding: 1rem;
+  align-self: center;
+  
+  
+}
+
+.news-div {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  justify-content: center;
+  grid-gap: 1rem;
+  background-color: #f2e6d9; /* Aged paper color */
+  border-radius: 10px;
+}
+
+/* Screen larger than 600px? 2 column */
+@media (min-width: 600px) {
+  .news-div { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Screen larger than 900px? 3 columns */
+@media (min-width: 900px) {
+  .news-div { grid-template-columns: repeat(3, 1fr); }
+}
+
 @media (max-width: 850px) {
   .paper {
     width: 90vw;
