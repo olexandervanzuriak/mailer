@@ -11,7 +11,7 @@ from subscribe import send_verification_email
 from mailer import send_email
 from mailer import fetch_news_to_database
 
-css = Link(rel="stylesheet", href="/static/styles.css")
+css = Link(rel="stylesheet", href="/static/styles.css?v=")
 favicon = Link(rel="icon", href="/static/favicon.jpg", type="image/x-jpg")
 
 app, rt = fast_app(hdrs=(css, favicon), pico=False)
@@ -63,7 +63,7 @@ def fetch_and_store_all_news():
 
 def schedule_daily_news_fetch():
     """Schedule the daily news fetching task."""
-    schedule.every().day.at("20:41").do(fetch_and_store_all_news)
+    schedule.every().day.at("10:30").do(fetch_and_store_all_news)
 
 
 def clear_previous_task(username, email):
@@ -263,31 +263,35 @@ def verify(token: str):
 def get_news_history():
     return Title("News history"), Main(
         Div(
-            H2("Select a date and news source to view past news"),
-            Form(
-                Div(
-                    Input(type="date", name="news_date", required=""),
-                    cls="input-box"
-                ),
-                Div(
-                    Select(
-                        Option("Всі джерела", value="all"),
-                        Option("Українська правда", value="ukrpravda"),
-                        Option("Радіо Свобода", value="radiosvoboda"),
-                        Option("Економічна правда", value="epravda"),
-                        Option("ТСН", value="tsn"),
-                        name="news_channel",
-                        required=""
+            Div(
+                H2("Select a date and news source to view past news"),
+                Form(
+                    Div(
+                        Input(type="date", name="news_date", required=""),
+                        cls="input-box"
                     ),
-                    cls="input-box"
+                    Div(
+                        Select(
+                            Option("Всі джерела", value="all"),
+                            Option("Українська правда", value="ukrpravda"),
+                            Option("Радіо Свобода", value="radiosvoboda"),
+                            Option("Економічна правда", value="epravda"),
+                            Option("ТСН", value="tsn"),
+                            name="news_channel",
+                            required=""
+                        ),
+                        cls="input-box"
+                    ),
+                    Div(
+                        Input(type="submit", value="See news"),
+                        cls="input-box button"
+                    ),
+                    hx_post="/news_history",
+                    hx_target="#news_results",
+                    hx_swap="innerHTML",
+                    cls="news-form"
                 ),
-                Div(
-                    Input(type="submit", value="See news"),
-                    cls="input-box button"
-                ),
-                hx_post="/news_history",
-                hx_target="#news_results",
-                hx_swap="innerHTML"
+                cls="news-form-div"
             ),
             Div(id="news_results", style="font-size: 16px;"),
         )

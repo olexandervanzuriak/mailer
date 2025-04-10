@@ -333,10 +333,6 @@ a {
   padding: 5px;
 }
 
-.input-box {
-  padding: 10px;
-}
-
 .input-field {
   width: 100%;
   padding: 8px;
@@ -379,14 +375,11 @@ a {
 }
 
 #news_results a {
-  color: #3a362b;
+  color: #8cb4ff;
 }
 
 .news {
   padding: 1rem;
-  align-self: center;
-  
-  
 }
 
 .news-div {
@@ -397,6 +390,22 @@ a {
   grid-gap: 1rem;
   background-color: #f2e6d9; /* Aged paper color */
   border-radius: 10px;
+  margin-top: 16px;
+}
+
+.news-form-div {
+  padding: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.news-form {
+  display: flex;
+  align-self: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 16px;
 }
 
 /* Screen larger than 600px? 2 column */
