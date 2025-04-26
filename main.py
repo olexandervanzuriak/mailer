@@ -26,7 +26,7 @@ class TempUser:
     username: str
     email: str
     email_time: str
-    news_channel: str 
+    news_channel: str
     token: str
 
 
@@ -34,7 +34,7 @@ class User:
     username: str
     email: str
     email_time: str
-    news_channel: str 
+    news_channel: str
 
 
 def validate_user(user: TempUser):
@@ -53,6 +53,7 @@ def send_daily_email(username, email):
     print(f"Sending daily email to {username}")
     send_email(email)
 
+
 def fetch_and_store_all_news():
     """Fetch and store news from all sources once a day."""
     news_channels = ["ukrpravda", "epravda", "radiosvoboda", "tsn"]
@@ -60,6 +61,7 @@ def fetch_and_store_all_news():
         print(f"Fetching news for {channel}...")
         fetch_news_to_database(channel)
     print(f"News fetched and stored at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}.")
+
 
 def schedule_daily_news_fetch():
     """Schedule the daily news fetching task."""
@@ -76,7 +78,6 @@ def clear_previous_task(username, email):
 
 def schedule_daily_email(username, email, email_time):
     """Schedule the email sending at the user's chosen time."""
-    
     clear_previous_task(username, email)
 
     print(f"Scheduling email for {username} at {email_time}")
@@ -92,7 +93,7 @@ def schedule_daily_email(username, email, email_time):
 
 
 def load_existing_schedules():
-    """ Load all verified users and schedule their emails on startup """
+    """Load all verified users and schedule their emails on startup."""
     users = db.q("SELECT username, email, email_time FROM users")
     for user in users:
         if not any(job.job_func.args == (user["username"], user["email"]) for job in schedule.get_jobs()):
@@ -103,16 +104,16 @@ def load_existing_schedules():
 
 
 def stop_scheduler_thread():
-    """ Stop the currently running scheduler thread safely. """
+    """Stop the currently running scheduler thread safely."""
     global scheduler_thread
     if scheduler_thread and scheduler_thread.is_alive():
         print("Stopping the current scheduler thread.")
-        scheduler_thread.join() 
+        scheduler_thread.join()
         print("Scheduler thread stopped.")
 
 
 def clear_all_jobs():
-    """ Clears all scheduled jobs to ensure no duplicates. """
+    """Clears all scheduled jobs to ensure no duplicates."""
     print("Clearing all scheduled jobs.")
     schedule.clear()
 
@@ -159,9 +160,10 @@ def get():
         )
     )
 
+
 @rt("/register", methods="get")
 def get():
-        return Title("Registration"), Main(
+    return Title("Registration"), Main(
         Div(
             H2('Registration'),
             Form(
@@ -199,6 +201,7 @@ def get():
         )
     )
 
+
 @rt("/register", methods="post")
 def post(username: str, email: str, email_time: str, news_channel: str):
     token = secrets.token_urlsafe(16)
@@ -212,9 +215,9 @@ def post(username: str, email: str, email_time: str, news_channel: str):
     if existing_user:
         return Div(f"Email {user.email} is already registered.", id="result", style="color: red;")
 
-    sender_email = "daybreakdigests@gmail.com" 
+    sender_email = "daybreakdigests@gmail.com"
     sender_password = os.getenv("GMAIL_PASS")
-        
+
     email_sent = send_verification_email(sender_email, sender_password, user.email, token)
 
     if email_sent:
@@ -238,26 +241,25 @@ def verify(token: str):
         db.t.users.insert(username=username, email=email, email_time=email_time, news_channel=news_channel)
         db.q("DELETE FROM temp_users WHERE token=?", (token,))
 
-
         restart_scheduler()
         schedule_daily_email(username, email, email_time)
 
         return Title("Verification"), Main(Div(
-                H2("Verification Successful!", style="color: black;"),
-                P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: black;"),
-                P("You will start receiving daily emails at your chosen time.", style="color: black;"),
-                P("If you have any issues, feel free to contact support.", style="color: black;"),
-                cls="container"
-            ),
-        )
+            H2("Verification Successful!", style="color: black;"),
+            P(f"Congratulations, {user[0]['username']}! Your email has been verified successfully.", style="color: black;"),
+            P("You will start receiving daily emails at your chosen time.", style="color: black;"),
+            P("If you have any issues, feel free to contact support.", style="color: black;"),
+            cls="container"
+        ))
+
     else:
         return Title("Verification"), Main(Div(
             H2("Verification Failed", style="color: black;"),
             P("The verification link is invalid or has expired.", style="color: black;"),
             P("Please try registering again.", style="color: black;"),
             cls="container"
-            ),
-        )
+        ))
+
 
 @rt("/news_history", methods="get")
 def get_news_history():
@@ -317,16 +319,16 @@ def post_news_history(news_date: str, news_channel: str):
     return Div(
         H2(f"Новини за {news_date} ({news_channel if news_channel != 'all' else 'Всі джерела'})"),
         Div(
-        *[
-            Div(
-                H3(record["title"]),
-                P(record["description"]),
-                P(A("Читати більше", href=record["link"], target="_blank")),
-                cls="news"
-            ) for record in news_records
-        ], cls="news-div")
+            *[
+                Div(
+                    H3(record["title"]),
+                    P(record["description"]),
+                    P(A("Читати більше", href=record["link"], target="_blank")),
+                    cls="news"
+                ) for record in news_records
+            ], cls="news-div"
+        )
     )
-
 
 
 def on_server_start():

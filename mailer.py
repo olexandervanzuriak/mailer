@@ -16,10 +16,8 @@ SENDER_EMAIL = 'daybreakdigests@gmail.com'
 SENDER_APP_PASSWORD = os.getenv("GMAIL_PASS")
 
 
-from datetime import datetime
-
 def format_date(date_string):
-    """Convert full datetime to 'DD Month, HH:MM' format in Ukrainian"""
+    """Convert full datetime to 'DD Month, HH:MM' format in Ukrainian."""
     month_names = {
         "January": "січня", "February": "лютого", "March": "березня", "April": "квітня",
         "May": "травня", "June": "червня", "July": "липня", "August": "серпня",
@@ -27,27 +25,23 @@ def format_date(date_string):
     }
 
     try:
-        # First, try to parse the date as an RFC 2822 date
         try:
             parsed_date = datetime.strptime(date_string, "%a, %d %b %Y %H:%M:%S %z")
         except ValueError:
-            # If parsing as RFC 2822 fails, try parsing it as an ISO 8601 date
             try:
                 parsed_date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
             except ValueError:
-                # If both parsing methods fail, return the original string
                 return date_string
 
-        # Convert the month from English to Ukrainian
         month_english = parsed_date.strftime("%B")
         month_ukrainian = month_names.get(month_english, month_english)
         
-        # Return the formatted date
         return parsed_date.strftime(f"%-d {month_ukrainian}, %H:%M")
     
     except Exception as e:
         print(f"Error formatting date: {e}")
         return date_string
+
 
 def fetch_news_to_database(news_channel, save_to_db=True):
     """Fetch latest news from a specified channel and save to database if required."""
@@ -66,7 +60,7 @@ def fetch_news_to_database(news_channel, save_to_db=True):
     d = feedparser.parse(feed_url)
     today_date = datetime.now().strftime("%Y-%m-%d")
 
-    for entry in d.entries[:5]:  
+    for entry in d.entries[:5]:
         formatted_date = format_date(entry.published)
         db.t.news_archive.insert(
             date=today_date,
@@ -77,9 +71,9 @@ def fetch_news_to_database(news_channel, save_to_db=True):
             time=formatted_date
         )
 
+
 def fetch_news(news_channel):
     """Fetch latest news from the specified news channel and type."""
-    # Modify this to handle different news channels
     EMAIL_BODY = """
     <html>
     <head>
@@ -141,7 +135,6 @@ def fetch_news(news_channel):
             <h2>📰 Сьогоднішні новини</h2>
     """
     
-    # Add different news channel feeds
     if news_channel == 'ukrpravda':
         feed_url = 'https://www.pravda.com.ua/rss/view_news/'
     elif news_channel == 'epravda':
@@ -153,8 +146,7 @@ def fetch_news(news_channel):
 
     d = feedparser.parse(feed_url)
     
-    # Filter news based on news type if applicable
-    for entry in d.entries[:5]:  
+    for entry in d.entries[:5]:
         formatted_date = format_date(entry.published)
         EMAIL_BODY += (  
             f"<h3>{entry.title}</h3>"  
@@ -172,8 +164,9 @@ def fetch_news(news_channel):
     
     return EMAIL_BODY
 
+
 def send_email(recipient_email, subject="Today's News"):
-    """Send an email using SMTP"""
+    """Send an email using SMTP."""
     user = db.q("SELECT * FROM users WHERE email=?", (recipient_email,))
     email_body = fetch_news(user[0]["news_channel"])
 

@@ -30,3 +30,5 @@ watchfiles==1.0.4
 websockets==15.0.1
 feedparser
 schedule
+pytest
+pytest-asyncio
